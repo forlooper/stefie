@@ -1,8 +1,8 @@
 # Stefie
 
----
-
 Superlight schema-based Node.js object validator. Useful for Express req.body, req.params, req.query.
+
+---
 
 ## Installation
 

@@ -1,7 +1,7 @@
 {
   "name": "stefie",
-  "version": "1.0.0",
-  "description": "Superlight schema-based Node.js object validator.",
+  "version": "1.0.1",
+  "description": "Superlight schema-based Node.js object validator. Useful for Express req.body, req.params, req.query.",
   "main": "index.js",
   "scripts": {
     "test": "mocha test/test.js"
@@ -19,5 +19,9 @@
   "devDependencies": {
     "mocha": "^2.1.0",
     "should": "^4.6.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/forlooper/stefie/issues"
+  },
+  "homepage": "https://github.com/forlooper/stefie"
 }
