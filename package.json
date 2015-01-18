@@ -23,5 +23,9 @@
   "bugs": {
     "url": "https://github.com/forlooper/stefie/issues"
   },
-  "homepage": "https://github.com/forlooper/stefie"
+  "homepage": "https://github.com/forlooper/stefie",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/forlooper/stefie"
+  }
 }
