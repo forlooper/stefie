@@ -1,0 +1,23 @@
+{
+  "name": "stefie",
+  "version": "1.0.0",
+  "description": "Superlight schema-based Node.js object validator.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "keywords": [
+    "stefie",
+    "checker",
+    "validator",
+    "express",
+    "request",
+    "schema"
+  ],
+  "author": "Harry Lee <harry@forlooper.com>",
+  "license": "MIT License",
+  "devDependencies": {
+    "mocha": "^2.1.0",
+    "should": "^4.6.0"
+  }
+}
