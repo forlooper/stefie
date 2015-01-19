@@ -79,13 +79,15 @@ if (error != null) {
 
 Schema Attributes begin with an underscore so that they don't namespace clash with the property names of your object in the schema.
 
-| Attribute      | Value                                                                 |
-| -------------- | --------------------------------------------------------------------- |
-| `_required`    | <code>true&#124;false</code>                                          |
+| Attribute      | Value                                                                 | Note
+| -------------- | --------------------------------------------------------------------- | ----
+| `_required`    | <code>true&#124;false</code>                                          | For any type
 | `_type`        | <code>'string&#124;boolean&#124;number&#124;array&#124;object'</code> |
-| `_min`         | *number*                                                              |
-| `_max`         | *number*                                                              |
-| `_elementType` | <code>'string&#124;boolean&#124;number&#124;array&#124;object'</code> |
+| `_min`         | *number*                                                              | For number type
+| `_max`         | *number*                                                              | For number type
+| `_elementType` | <code>'string&#124;boolean&#124;number&#124;array&#124;object'</code> | For array type
+| `_minLength`   | *number*                                                              | For array type
+| `_maxLength`   | *number*                                                              | For array type
 
 ## Test
 

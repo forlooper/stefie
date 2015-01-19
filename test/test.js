@@ -149,7 +149,7 @@ describe('Number check', function(done) {
 		var val = { age: 20 };
 		var error = stefie(val,  schema);
 
-		error.age.should.equal('Invalid value');
+		error.age.should.equal('Below minimum amount');
 		done();
 	});
 	it('should detect value is below min (2)', function (done) {
@@ -157,7 +157,7 @@ describe('Number check', function(done) {
 		var val = { age: 20 };
 		var error = stefie(val,  schema);
 
-		error.age.should.equal('Invalid value');
+		error.age.should.equal('Below minimum amount');
 		done();
 	});
 	it('should detect value is above max', function (done) {
@@ -165,7 +165,7 @@ describe('Number check', function(done) {
 		var val = { age: 31 };
 		var error = stefie(val,  schema);
 
-		error.age.should.equal('Invalid value');
+		error.age.should.equal('Above maximum amount');
 		done();
 	});
 	it('should detect value is above max (2)', function (done) {
@@ -173,7 +173,7 @@ describe('Number check', function(done) {
 		var val = { age: 31 };
 		var error = stefie(val,  schema);
 
-		error.age.should.equal('Invalid value');
+		error.age.should.equal('Above maximum amount');
 		done();
 	});
 });
@@ -197,6 +197,30 @@ describe('Array check', function(done) {
 		assert(error == null);
 		done();
 	});
+	it('should detect length >= min', function (done) {
+		var schema = { friends: { _type: 'array', _minLength: 2 } };
+		var val = { friends: ['may', 'katrina'] };
+		var error = stefie(val,  schema);
+
+		assert(error == null);
+		done();
+	});
+	it('should detect length <= max', function (done) {
+		var schema = { friends: { _type: 'array', _maxLength: 2 } };
+		var val = { friends: ['may', 'katrina'] };
+		var error = stefie(val,  schema);
+
+		assert(error == null);
+		done();
+	});
+	it('should detect length >= min and <= max', function (done) {
+		var schema = { friends: { _type: 'array', _minLength: 1, _maxLength: 3 } };
+		var val = { friends: ['may', 'katrina'] };
+		var error = stefie(val,  schema);
+
+		assert(error == null);
+		done();
+	});
 	it('should detect value is an invalid type', function (done) {
 		var schema = { friends: { _type: 'array' } };
 		var val = { friends: 100 };
@@ -211,6 +235,38 @@ describe('Array check', function(done) {
 		var error = stefie(val,  schema);
 
 		error.friends.should.equal('Invalid element type');
+		done();
+	});
+	it('should detect value is below min', function (done) {
+		var schema = { friends: { _type: 'array', _minLength: 3 } };
+		var val = { friends: ['may', 'katrina'] };
+		var error = stefie(val,  schema);
+
+		error.friends.should.equal('Below minimum length');
+		done();
+	});
+	it('should detect value is below min (2)', function (done) {
+		var schema = { friends: { _type: 'array', _minLength: 3, _maxLength: 3 } };
+		var val = { friends: ['may', 'katrina'] };
+		var error = stefie(val,  schema);
+
+		error.friends.should.equal('Below minimum length');
+		done();
+	});
+	it('should detect value is above max', function (done) {
+		var schema = { friends: { _type: 'array', _maxLength: 1 } };
+		var val = { friends: ['may', 'katrina'] };
+		var error = stefie(val,  schema);
+
+		error.friends.should.equal('Above maximum length');
+		done();
+	});
+	it('should detect value is above max (2)', function (done) {
+		var schema = { friends: { _type: 'array', _minLength: 1, _maxLength: 1 } };
+		var val = { friends: ['may', 'katrina'] };
+		var error = stefie(val,  schema);
+
+		error.friends.should.equal('Above maximum length');
 		done();
 	});
 });

@@ -42,10 +42,10 @@ var check = function chk(val, def) {
 				return 'Invalid type';
 			
 			if (typeof def._min == 'number' && val < def._min)
-				return 'Invalid value';
+				return 'Below minimum amount';
 
 			if (typeof def._max == 'number' && val > def._max)
-				return 'Invalid value';
+				return 'Above maximum amount';
 			break;
 		case 'array':
 			if (!Array.isArray(val))
@@ -56,6 +56,16 @@ var check = function chk(val, def) {
 					if (typeof val[i] != def._elementType)
 						return 'Invalid element type';
 				}
+			}
+
+			if (def._minLength) {
+				if (val.length < def._minLength)
+					return 'Below minimum length';
+			}
+
+			if (def._maxLength) {
+				if (val.length > def._maxLength)
+					return 'Above maximum length';
 			}
 			break;
 		case 'object':
