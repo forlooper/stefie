@@ -1,6 +1,6 @@
 {
   "name": "stefie",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Superlight schema-based Node.js object validator. Useful for Express req.body, req.params, req.query.",
   "main": "index.js",
   "scripts": {

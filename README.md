@@ -1,8 +1,13 @@
 # Stefie
 
-Superlight schema-based Node.js object validator. Useful for Express req.body, req.params, req.query.
+Superlight schema-based Node.js object validator. Useful for Express req.body, req.params, req.query, or MongoDB document before inserting into collection if don't want to use Mongoose.
 
 ---
+
+## What's New
+
+- Check for Date type
+- Added the _enum attribute
 
 ## Installation
 
@@ -27,7 +32,7 @@ if (error != null) {
 }
 ```
 
-### A More Complex Example
+### A More Full-Fledged Example
 ```
 var stefie = require('stefie');
 
@@ -43,7 +48,9 @@ var schema = {
 		beautiful: { _type: 'boolean', _required: true },
 		siblings: { _type: 'number', _required: false },
 		religion: { _type: 'string', _required: true },
-		hobbies: { _type: 'array', _elementType: 'string' }
+		hobbies: { _type: 'array', _elementType: 'string' },
+		devices: { _type: 'array', _enum: ['desktop', 'laptop', 'phone', 'tablet'] },
+		phone: { _type: 'string', _enum: ['ios', 'android', 'windows', 'blackberry'] }
 	}
 };
 // This is an example object that we want to validate
@@ -56,7 +63,9 @@ var obj = {
 		beautiful: true,
 		siblings: 1,
 		religion: 'buddhism',
-		hobbies: ['eat', 'sleep', false] // <- should be array of strings only
+		hobbies: ['eat', 'sleep', false], // <- should be array of strings only
+		devices: ['laptop', 'phone', 'tablet'],
+		phone: 'android'
 	}
 };
 var error = stefie(val,  schema);
@@ -79,15 +88,16 @@ if (error != null) {
 
 Schema Attributes begin with an underscore so that they don't namespace clash with the property names of your object in the schema.
 
-| Attribute      | Value                                                                 | Note
-| -------------- | --------------------------------------------------------------------- | ----
-| `_required`    | <code>true&#124;false</code>                                          | For any type
-| `_type`        | <code>'string&#124;boolean&#124;number&#124;array&#124;object'</code> |
-| `_min`         | *number*                                                              | For number type
-| `_max`         | *number*                                                              | For number type
-| `_elementType` | <code>'string&#124;boolean&#124;number&#124;array&#124;object'</code> | For array type
-| `_minLength`   | *number*                                                              | For array type
-| `_maxLength`   | *number*                                                              | For array type
+| Attribute      | Value                                                                           | Note
+| -------------- | ------------------------------------------------------------------------------- | ----
+| `_required`    | <code>true&#124;false</code>                                                    | For any type
+| `_type`        | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code> |
+| `_min`         | *number*                                                                        | For number type
+| `_max`         | *number*                                                                        | For number type
+| `_elementType` | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code> | For array type
+| `_minLength`   | *number*                                                                        | For array type
+| `_maxLength`   | *number*                                                                        | For array type
+| `_enum`        | *array*                                                                         | For any type
 
 ## Test
 

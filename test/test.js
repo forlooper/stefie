@@ -367,6 +367,68 @@ describe('Nested object check', function(done) {
 
 
 
+describe('Date check', function(done) {
+	it('should detect value is a date', function (done) {
+		var schema = {launchDate: {_type: 'date'}};
+		var val = {launchDate: new Date(2015, 1, 1)};
+		var error = stefie(val, schema);
+
+		assert(error == null);
+		done();
+	});
+
+	it('should detect value is not a date', function (done) {
+		var schema = {launchDate: {_type: 'date'}};
+		var val = {launchDate: false};
+		var error = stefie(val, schema);
+
+		error.launchDate.should.equal('Invalid type');
+		done();
+	});
+});
+
+
+
+describe('Enum check', function(done) {
+	it('should detect value is in enum', function (done) {
+		var schema = { piece: { _enum: ['rook', 'queen', 'bishop'] } };
+		var val = { piece: 'queen' };
+		var error = stefie(val, schema);
+
+		assert(error == null);
+		done();
+	});
+
+	it('should detect value is not in enum', function (done) {
+		var schema = { piece: { _enum: ['rook', 'queen', 'bishop'] } };
+		var val = { piece: 'king' };
+		var error = stefie(val, schema);
+
+		error.piece.should.equal('Invalid value');
+		done();
+	});
+
+	it('should detect values are in enum', function (done) {
+		var schema = { pieces: { _enum: ['rook', 'queen', 'bishop'] } };
+		var val = { pieces: ['rook', 'queen'] };
+		var error = stefie(val, schema);
+
+		assert(error == null);
+		done();
+	});
+
+	it('should detect a value is not in enum', function (done) {
+		var schema = { pieces: { _enum: ['rook', 'queen', 'bishop'] } };
+		var val = { pieces: ['king', 'queen'] };
+		var error = stefie(val, schema);
+
+		error.pieces.should.equal('Invalid value');
+		done();
+	});
+});
+
+
+
 describe('Full schema check', function(done) {
 	it('should detect value is an object', function (done) {
 		var schema = {

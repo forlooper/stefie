@@ -28,69 +28,92 @@ var check = function chk(val, def) {
 		return null;
 	}
 	
-	switch (def._type) {
-		case 'string':
-			if (typeof val != 'string')
-				return 'Invalid type';
-			break;
-		case 'boolean':
-			if (typeof val != 'boolean')
-				return 'Invalid type';
-			break;
-		case 'number':
-			if (typeof val != 'number')
-				return 'Invalid type';
-			
-			if (typeof def._min == 'number' && val < def._min)
-				return 'Below minimum amount';
+	if (def._enum) {
+		if (!Array.isArray(def._enum))
+			return 'Invalid enum';
 
-			if (typeof def._max == 'number' && val > def._max)
-				return 'Above maximum amount';
-			break;
-		case 'array':
-			if (!Array.isArray(val))
-				return 'Invalid type';
-			
-			if (def._elementType) {
-				for (var i=0; i < val.length; i++) {
-					if (typeof val[i] != def._elementType)
-						return 'Invalid element type';
+		if (Array.isArray(val)) {
+			for (var i=0; i < val.length; i++) {
+				if (def._enum.indexOf(val[i]) < 0)
+					return 'Invalid value';
+			}
+		}
+		else {
+			if (def._enum.indexOf(val) < 0)
+				return 'Invalid value';
+		}
+	}
+	
+	if (def._type) {
+		switch (def._type) {
+			case 'date':
+				// http://stackoverflow.com/questions/643782/how-to-check-whether-an-object-is-a-date
+				if (Object.prototype.toString.call(val) !== '[object Date]')
+					return 'Invalid type';
+				break;
+			case 'string':
+				if (typeof val != 'string')
+					return 'Invalid type';
+				break;
+			case 'boolean':
+				if (typeof val != 'boolean')
+					return 'Invalid type';
+				break;
+			case 'number':
+				if (typeof val != 'number')
+					return 'Invalid type';
+
+				if (typeof def._min == 'number' && val < def._min)
+					return 'Below minimum amount';
+
+				if (typeof def._max == 'number' && val > def._max)
+					return 'Above maximum amount';
+				break;
+			case 'array':
+				if (!Array.isArray(val))
+					return 'Invalid type';
+
+				if (def._elementType) {
+					for (var i=0; i < val.length; i++) {
+						if (typeof val[i] != def._elementType)
+							return 'Invalid element type';
+					}
 				}
-			}
 
-			if (def._minLength) {
-				if (val.length < def._minLength)
-					return 'Below minimum length';
-			}
-
-			if (def._maxLength) {
-				if (val.length > def._maxLength)
-					return 'Above maximum length';
-			}
-			break;
-		case 'object':
-			if (typeof val != 'object')
-				return 'Invalid type';
-
-			var error = null;
-			for (var key in val) {
-				var subDef = def[key];
-				var subVal = val[key];
-				var err = chk(subVal, subDef);
-
-				if (err != null) {
-					if (error == null)
-						error = {};
-
-					error[key] = err;
+				if (def._minLength) {
+					if (val.length < def._minLength)
+						return 'Below minimum length';
 				}
-			}
-			
-			return error; 
-			break;
-		default:
-			return 'Invalid definition type';
-			break;
+
+				if (def._maxLength) {
+					if (val.length > def._maxLength)
+						return 'Above maximum length';
+				}
+				break;
+			case 'object':
+				if (typeof val != 'object')
+					return 'Invalid type';
+
+				var error = null;
+				for (var key in val) {
+					var subDef = def[key];
+					var subVal = val[key];
+					var err = chk(subVal, subDef);
+
+					if (err != null) {
+						if (error == null)
+							error = {};
+
+						error[key] = err;
+					}
+				}
+
+				return error;
+				break;
+			default:
+				return 'Invalid definition type';
+				break;
+		}
 	}
 	
 	return null;
