@@ -1,5 +1,6 @@
 var should = require('should'),
 	assert = require('assert'),
+	ObjectID = require('mongodb').ObjectID,
 	stefie = require('../index.js');
 
 describe('Definition object check', function(done) {
@@ -401,6 +402,26 @@ describe('Date check', function(done) {
 	});
 });
 
+describe('ObjectId check', function(done) {
+	it('should detect value is an ObjectId', function (done) {
+		var schema = { _id: {_type: 'ObjectId' } };
+		var val = { _id: new ObjectID('20dce54a286839aeb06143c2') };
+		var error = stefie(val, schema);
+
+		assert(error == null);
+		done();
+	});
+
+	it('should detect value is not an ObjectId', function (done) {
+		var schema = { _id: {_type: 'ObjectId' } };
+		var val = { _id: '100' };
+		var error = stefie(val, schema);
+
+		error._id.should.equal('Invalid type');
+		done();
+	});
+});
+
 
 
 describe('Enum check', function(done) {
@@ -465,6 +486,7 @@ describe('Regex check', function(done) {
 describe('Full schema check', function(done) {
 	it('should detect value is an object', function (done) {
 		var schema = {
+			_id: { _type: 'ObjectId', _required: true },
 			name: { _type: 'string', _required: true },
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },
@@ -479,6 +501,7 @@ describe('Full schema check', function(done) {
 			}
 		};
 		var val = {
+			_id: new ObjectID('20dce54a286839aeb06143c2'),
 			name: 'Stefie',
 			female: true,
 			age: 25,
@@ -498,6 +521,7 @@ describe('Full schema check', function(done) {
 	});
 	it('should detect and allow optional value missing', function (done) {
 		var schema = {
+			_id: { _type: 'ObjectId', _required: true },
 			name: { _type: 'string', _required: true },
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },
@@ -512,6 +536,7 @@ describe('Full schema check', function(done) {
 			}
 		};
 		var val = {
+			_id: new ObjectID('20dce54a286839aeb06143c2'),
 			name: 'Stefie',
 			female: true,
 			friends: ['may', 'katrina'],
@@ -527,6 +552,7 @@ describe('Full schema check', function(done) {
 	});
 	it('should detect all as invalid types', function (done) {
 		var schema = {
+			_id: { _type: 'ObjectId', _required: true },
 			name: { _type: 'string', _required: true },
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },
@@ -541,6 +567,7 @@ describe('Full schema check', function(done) {
 			}
 		};
 		var val = {
+			_id: '100',
 			name: 100,
 			female: 200,
 			age: '300',
@@ -555,6 +582,7 @@ describe('Full schema check', function(done) {
 		};
 		var error = stefie(val,  schema);
 
+		error._id.should.equal('Invalid type');
 		error.name.should.equal('Invalid type');
 		error.female.should.equal('Invalid type');
 		error.age.should.equal('Invalid type');

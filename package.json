@@ -1,6 +1,6 @@
 {
   "name": "stefie",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Superlight schema-based Node.js object validator. Useful for Express req.body/params/query, or MongoDB document before inserting into collection if don't want to use Mongoose.",
   "main": "index.js",
   "scripts": {
@@ -29,5 +29,8 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/forlooper/stefie"
+  },
+  "dependencies": {
+    "mongodb": "^2.0.15"
   }
 }

@@ -1,3 +1,5 @@
+var ObjectID = require('mongodb').ObjectID;
+
 module.exports = function(val, schema) {
 	var error = null;
 	
@@ -113,6 +115,13 @@ var check = function chk(val, def) {
 				}
 
 				return error;
+				break;
+			case 'ObjectId':
+				if (typeof val.toHexString == 'undefined')
+					return 'Invalid type';
+					
+				if (!ObjectID.isValid( val.toHexString() ))
+					return 'Invalid type';
 				break;
 			default:
 				return 'Invalid definition type';
