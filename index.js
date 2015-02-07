@@ -3,6 +3,10 @@ module.exports = function(val, schema) {
 	
 	for (var key in schema) {
 		var def = schema[key];
+		
+		if (typeof def !== 'object')
+			continue;
+		
 		var subVal = val[key];
 		var err = check(subVal, def);
 		
@@ -113,6 +117,12 @@ var check = function chk(val, def) {
 			default:
 				return 'Invalid definition type';
 				break;
+		}
+	}
+	
+	if (def._regex) {
+		if (!def._regex.test(val)) {
+			return 'Regex failed'
 		}
 	}
 	

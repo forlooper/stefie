@@ -2,6 +2,20 @@ var should = require('should'),
 	assert = require('assert'),
 	stefie = require('../index.js');
 
+describe('Definition object check', function(done) {
+	it('should ignore non-objects in schema', function (done) {
+		var schema = {
+			color: { _type: 'string' },
+			size: function() { return 1+2; }
+		};
+		var val = { name: 'green' };
+		var error = stefie(val,  schema);
+
+		assert(error == null);
+		done();
+	});
+});
+
 describe('Optional check', function(done) {
 	it('should detect value exists', function (done) {
 		var schema = { name: { _type: 'string' } };
@@ -428,6 +442,25 @@ describe('Enum check', function(done) {
 });
 
 
+describe('Regex check', function(done) {
+	it('should test regex pass', function (done) {
+		var schema = { mood: { _regex: /^[a-z]+$/ } };
+		var val = { mood: 'happy' };
+		var error = stefie(val,  schema);
+
+		assert(error == null);
+		done();
+	});
+	it('should test regex fail', function (done) {
+		var schema = { mood: { _regex: /^[a-z]+$/ } };
+		var val = { mood: -1 };
+		var error = stefie(val,  schema);
+
+		error.mood.should.equal('Regex failed');
+		done();
+	});
+});
+
 
 describe('Full schema check', function(done) {
 	it('should detect value is an object', function (done) {
@@ -436,6 +469,7 @@ describe('Full schema check', function(done) {
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },
 			friends: { _type: 'array', _elementType: 'string', _required: true },
+			mood: { _regex: /^[a-z]+$/ },
 			attributes: {
 				_type: 'object',
 				beautiful: { _type: 'boolean', _required: true },
@@ -449,6 +483,7 @@ describe('Full schema check', function(done) {
 			female: true,
 			age: 25,
 			friends: ['may', 'katrina'],
+			mood: 'happy',
 			attributes: {
 				beautiful: true,
 				siblings: 1,
@@ -467,6 +502,7 @@ describe('Full schema check', function(done) {
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },
 			friends: { _type: 'array', _elementType: 'string', _required: true },
+			mood: { _regex: /^[a-z]+$/ },
 			attributes: {
 				_type: 'object',
 				beautiful: { _type: 'boolean', _required: true },
@@ -495,6 +531,7 @@ describe('Full schema check', function(done) {
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },
 			friends: { _type: 'array', _elementType: 'string', _required: true },
+			mood: { _regex: /^[a-z]+$/ },
 			attributes: {
 				_type: 'object',
 				beautiful: { _type: 'boolean', _required: true },
@@ -508,6 +545,7 @@ describe('Full schema check', function(done) {
 			female: 200,
 			age: '300',
 			friends: 400,
+			mood: -1,
 			attributes: {
 				beautiful: 100,
 				siblings: 1,
@@ -521,6 +559,7 @@ describe('Full schema check', function(done) {
 		error.female.should.equal('Invalid type');
 		error.age.should.equal('Invalid type');
 		error.friends.should.equal('Invalid type');
+		error.mood.should.equal('Regex failed');
 		error.attributes.beautiful.should.equal('Invalid type');
 		error.attributes.hobbies.should.equal('Invalid element type');
 		done();

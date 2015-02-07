@@ -6,8 +6,8 @@ Superlight schema-based Node.js object validator. Useful for Express req.body, r
 
 ## What's New
 
-- Check for Date type
-- Added the _enum attribute
+- Added the _regex attribute for regular expression
+- You can add functions to your schema and they will be safely ignored
 
 ## Installation
 
@@ -43,6 +43,7 @@ var schema = {
 	female: { _type: 'boolean', _required: true },
 	age: { _type: 'number' },
 	friends: { _type: 'array', _elementType: 'string', _required: true },
+	mood: { _regex: /^[a-z]+$/ },
 	profile: {
 		_type: 'object',
 		beautiful: { _type: 'boolean', _required: true },
@@ -59,6 +60,7 @@ var obj = {
 	female: true,
 	age: 'twenty-five', // <- should be a number
 	friends: ['may', 'katrina'],
+	mood: -1,
 	profile: {
 		beautiful: true,
 		siblings: 1,
@@ -76,6 +78,7 @@ if (error != null) {
 	Outputs:
 	{
 	  age: 'Invalid type',
+	  mood: 'Regex failed',
 	  profile: {
         hobbies: 'Invalid element type'
 	  }
@@ -91,13 +94,14 @@ Schema Attributes begin with an underscore so that they don't namespace clash wi
 | Attribute      | Value                                                                           | Note
 | -------------- | ------------------------------------------------------------------------------- | ----
 | `_required`    | <code>true&#124;false</code>                                                    | For any type
-| `_type`        | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code> |
+| `_type`        | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code> | 
 | `_min`         | *number*                                                                        | For number type
 | `_max`         | *number*                                                                        | For number type
 | `_elementType` | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code> | For array type
 | `_minLength`   | *number*                                                                        | For array type
 | `_maxLength`   | *number*                                                                        | For array type
 | `_enum`        | *array*                                                                         | For any type
+| `_regex`       | *regular expression*                                                            | 
 
 ## Test
 
