@@ -116,11 +116,12 @@ var check = function chk(val, def) {
 
 				return error;
 				break;
-			case 'ObjectId':
-				if (typeof val.toHexString == 'undefined')
+			case 'ObjectID':
+				if (typeof val.toHexString !== 'function')
 					return 'Invalid type';
-					
-				if (!ObjectID.isValid( val.toHexString() ))
+				break;
+			case 'hexString':
+				if (!ObjectID.isValid(val))
 					return 'Invalid type';
 				break;
 			default:

@@ -402,9 +402,9 @@ describe('Date check', function(done) {
 	});
 });
 
-describe('ObjectId check', function(done) {
-	it('should detect value is an ObjectId', function (done) {
-		var schema = { _id: {_type: 'ObjectId' } };
+describe('ObjectID check', function(done) {
+	it('should detect value is an ObjectID', function (done) {
+		var schema = { _id: {_type: 'ObjectID' } };
 		var val = { _id: new ObjectID('20dce54a286839aeb06143c2') };
 		var error = stefie(val, schema);
 
@@ -412,9 +412,9 @@ describe('ObjectId check', function(done) {
 		done();
 	});
 
-	it('should detect value is not an ObjectId', function (done) {
-		var schema = { _id: {_type: 'ObjectId' } };
-		var val = { _id: '100' };
+	it('should detect value is not an ObjectID', function (done) {
+		var schema = { _id: {_type: 'ObjectID' } };
+		var val = { _id: '20dce54a286839aeb06143c2' };
 		var error = stefie(val, schema);
 
 		error._id.should.equal('Invalid type');
@@ -422,7 +422,25 @@ describe('ObjectId check', function(done) {
 	});
 });
 
+describe('Hex String check', function(done) {
+	it('should detect value is an hex string', function (done) {
+		var schema = { _id: { _type: 'hexString' } };
+		var val = { _id: '20dce54a286839aeb06143c2' };
+		var error = stefie(val, schema);
 
+		assert(error == null);
+		done();
+	});
+
+	it('should detect value is not an ObjectID', function (done) {
+		var schema = { _id: { _type: 'hexString' } };
+		var val = { _id: '20dce54a286839aeb0!!!!!!' };
+		var error = stefie(val, schema);
+
+		error._id.should.equal('Invalid type');
+		done();
+	});
+});
 
 describe('Enum check', function(done) {
 	it('should detect value is in enum', function (done) {
@@ -486,7 +504,7 @@ describe('Regex check', function(done) {
 describe('Full schema check', function(done) {
 	it('should detect value is an object', function (done) {
 		var schema = {
-			_id: { _type: 'ObjectId', _required: true },
+			_id: { _type: 'ObjectID', _required: true },
 			name: { _type: 'string', _required: true },
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },
@@ -521,7 +539,7 @@ describe('Full schema check', function(done) {
 	});
 	it('should detect and allow optional value missing', function (done) {
 		var schema = {
-			_id: { _type: 'ObjectId', _required: true },
+			_id: { _type: 'ObjectID', _required: true },
 			name: { _type: 'string', _required: true },
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },
@@ -552,7 +570,7 @@ describe('Full schema check', function(done) {
 	});
 	it('should detect all as invalid types', function (done) {
 		var schema = {
-			_id: { _type: 'ObjectId', _required: true },
+			_id: { _type: 'ObjectID', _required: true },
 			name: { _type: 'string', _required: true },
 			female: { _type: 'boolean', _required: true },
 			age: { _type: 'number' },

@@ -6,9 +6,8 @@ Superlight schema-based Node.js object validator. Useful for Express req.body/pa
 
 ## What's New
 
-- Added ObjectId type to check for MongoDB ObjectId type
-- Added the _regex attribute for regular expression
-- You can add functions to your schema and they will be safely ignored
+- Added hexString type to check for valid MongoDB ObjectId hex string
+- Renamed ObjectId type to ObjectID to be consistent with [node-mongodb-native's ObjectID](http://mongodb.github.io/node-mongodb-native/2.0/api/ObjectID.html) 
 
 ## Installation
 
@@ -61,7 +60,7 @@ var obj = {
 	female: true,
 	age: 'twenty-five', // <- should be a number
 	friends: ['may', 'katrina'],
-	mood: -1,
+	mood: -1, // <- will not match the regex
 	profile: {
 		beautiful: true,
 		siblings: 1,
@@ -92,17 +91,17 @@ if (error != null) {
 
 Schema Attributes begin with an underscore so that they don't namespace clash with the property names of your object in the schema.
 
-| Attribute      | Value                                                                                         | Note
-| -------------- | --------------------------------------------------------------------------------------------- | ----
-| `_required`    | <code>true&#124;false</code>                                                                  | For any type
-| `_type`        | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object&#124;ObjectId'</code> | .
-| `_min`         | *number*                                                                                      | For number type
-| `_max`         | *number*                                                                                      | For number type
-| `_elementType` | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code>               | For array type
-| `_minLength`   | *number*                                                                                      | For array type
-| `_maxLength`   | *number*                                                                                      | For array type
-| `_enum`        | *array*                                                                                       | For any type
-| `_regex`       | *regular expression*                                                                          | .
+| Attribute      | Value                                                                                                        | Note
+| -------------- | ------------------------------------------------------------------------------------------------------------ | ----
+| `_required`    | <code>true&#124;false</code>                                                                                 | For any type
+| `_type`        | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object&#124;hexString&#124;ObjectID'</code> | .
+| `_min`         | *number*                                                                                                     | For number type
+| `_max`         | *number*                                                                                                     | For number type
+| `_elementType` | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code>                              | For array type
+| `_minLength`   | *number*                                                                                                     | For array type
+| `_maxLength`   | *number*                                                                                                     | For array type
+| `_enum`        | *array*                                                                                                      | For any type
+| `_regex`       | *regular expression*                                                                                         | .
 
 ## Test
 
