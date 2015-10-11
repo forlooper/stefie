@@ -98,8 +98,8 @@ Schema Attributes begin with an underscore so that they don't namespace clash wi
 | `_min`         | *number*                                                                                                     | For number type
 | `_max`         | *number*                                                                                                     | For number type
 | `_elementType` | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code>                              | For array type
-| `_minLength`   | *number*                                                                                                     | For array type
-| `_maxLength`   | *number*                                                                                                     | For array type
+| `_minLength`   | *number*                                                                                                     | For array or string type
+| `_maxLength`   | *number*                                                                                                     | For array or string type
 | `_enum`        | *array*                                                                                                      | For any type
 | `_regex`       | *regular expression*                                                                                         | .
 

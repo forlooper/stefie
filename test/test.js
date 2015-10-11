@@ -93,6 +93,46 @@ describe('String check', function(done) {
 		error.name.should.equal('Invalid type');
 		done();
 	});
+	it('should detect length < min', function (done) {
+		var schema = { name: { _type: 'string' } };
+		var val = { name: '' };
+		var error = stefie(val,  schema);
+		
+		error.name.should.equal('Below minimum length');
+		done();
+	});
+	it('should detect length >= min', function (done) {
+		var schema = { name: { _type: 'string' } };
+		var val = { name: 'Stefie' };
+		var error = stefie(val,  schema);
+		
+		assert(error == null);
+		done();
+	});
+	it('should detect length > max', function (done) {
+		var schema = { name: { _type: 'string' } };
+		var val = { name: 'Stefie' };
+		var error = stefie(val,  schema);
+		
+		assert(error == null);
+		done();
+	});
+	it('should detect length <= max', function (done) {
+		var schema = { name: { _type: 'string' } };
+		var val = { name: 'Stefie' };
+		var error = stefie(val,  schema);
+		
+		assert(error == null);
+		done();
+	});
+	it('should detect length >= min and <= max', function (done) {
+		var schema = { name: { _type: 'string' } };
+		var val = { name: 'Stefie' };
+		var error = stefie(val,  schema);
+		
+		assert(error == null);
+		done();
+	});
 });
 
 

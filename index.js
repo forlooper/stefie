@@ -60,6 +60,16 @@ var check = function chk(val, def) {
 			case 'string':
 				if (typeof val != 'string')
 					return 'Invalid type';
+				
+				if (def._minLength) {
+					if (val.length < def._minLength)
+						return 'Below minimum length';
+				}
+				
+				if (def._maxLength) {
+					if (val.length > def._maxLength)
+						return 'Above maximum length';
+				}
 				break;
 			case 'boolean':
 				if (typeof val != 'boolean')

@@ -1,6 +1,6 @@
 {
   "name": "stefie",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Superlight schema-based Node.js object validator. Useful for Express req.body/params/query, or MongoDB document before inserting into collection if don't want to use Mongoose.",
   "main": "index.js",
   "scripts": {
