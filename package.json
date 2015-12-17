@@ -1,7 +1,7 @@
 {
   "name": "stefie",
-  "version": "1.1.1",
-  "description": "Superlight schema-based Node.js object validator. Useful for Express req.body/params/query, or MongoDB document before inserting into collection if don't want to use Mongoose.",
+  "version": "2.0.0",
+  "description": "Superlight, schema-based, extensible Node.js object validator. Useful for Express req.body/params/query, or MongoDB document before inserting into collection if don't want to use Mongoose.",
   "main": "index.js",
   "scripts": {
     "test": "mocha test/test.js"
@@ -14,13 +14,14 @@
     "request",
     "schema",
     "mongodb",
-    "mongo"
+    "mongo",
+    "extensible"
   ],
   "author": "Harry Lee <harry@forlooper.com>",
-  "license": "MIT License",
+  "license": "MIT",
   "devDependencies": {
-    "mocha": "^2.1.0",
-    "should": "^4.6.0"
+    "mocha": "^2.3.4",
+    "should": "^8.0.1"
   },
   "bugs": {
     "url": "https://github.com/forlooper/stefie/issues"
@@ -31,6 +32,6 @@
     "url": "git://github.com/forlooper/stefie"
   },
   "dependencies": {
-    "mongodb": "^2.0.15"
+    "mongodb": "^2.0.52"
   }
 }

@@ -1,13 +1,17 @@
 # Stefie
 
-Superlight schema-based Node.js object validator. Useful for Express req.body/params/query, or MongoDB document before inserting into collection if don't want to use Mongoose.
+Superlight, schema-based, extensible Node.js object validator. Useful for Express req.body/params/query, or MongoDB document before inserting into collection if don't want to use Mongoose.
 
 ---
 
-## What's New
+## What's New in 2.0
 
-- Added hexString type to check for valid MongoDB ObjectId hex string
-- Renamed ObjectId type to ObjectID to be consistent with [node-mongodb-native's ObjectID](http://mongodb.github.io/node-mongodb-native/2.0/api/ObjectID.html) 
+- Extensiblity - Add your own custom validators with the `add()` method
+- Cleaner namespace management - put all your rules in the `_rules` object for each property in the schema
+- Code rewritten to be simpler and more elegant
+- Added `dateString` type to check for valid date strings
+- Renamed `ObjectID` type to `objectId` to be consistent with other type names
+- Renamed `hexString` type to `objectIdString` to be more intuitive
 
 ## Installation
 
@@ -17,95 +21,294 @@ $ npm install stefie
 
 ## Usage
 
-First, model the schema by defining each property of the object you are validating. Then, call `stefie`. Last, check if error is null. 
+Firstly, model a schema of the object you want to validate. Then, call `stefie` and see if she returns an error or null.
 
 ```
 var stefie = require('stefie');
-var schema = {
-	age: { _type: 'number' }
-};
-var obj = { age: 'twenty-five' };
-var error = stefie(obj, schema);
 
-if (error != null) {
-	console.log(error); // prints { age: 'Invalid type' }
-}
-```
-
-### A More Full-Fledged Example
-```
-var stefie = require('stefie');
-
-// This is the schema that your value/object will be validated against
-// Nesting is supported
-var schema = {
-	name: { _type: 'string', _required: true },
-	female: { _type: 'boolean', _required: true },
-	age: { _type: 'number' },
-	friends: { _type: 'array', _elementType: 'string', _required: true },
-	mood: { _regex: /^[a-z]+$/ },
-	profile: {
-		_type: 'object',
-		beautiful: { _type: 'boolean', _required: true },
-		siblings: { _type: 'number', _required: false },
-		religion: { _type: 'string', _required: true },
-		hobbies: { _type: 'array', _elementType: 'string' },
-		devices: { _type: 'array', _enum: ['desktop', 'laptop', 'phone', 'tablet'] },
-		phone: { _type: 'string', _enum: ['ios', 'android', 'windows', 'blackberry'] }
+var movie = {
+	title: '300',
+	crew: {
+		director: 'Zack Snyder',
+		writers: ['Frank Miller', 'Zack Snyder']
 	}
 };
-// This is an example object that we want to validate
-var obj = {
-	name: 'Stefie',
-	female: true,
-	age: 'twenty-five', // <- should be a number
-	friends: ['may', 'katrina'],
-	mood: -1, // <- will not match the regex
-	profile: {
-		beautiful: true,
-		siblings: 1,
-		religion: 'buddhism',
-		hobbies: ['eat', 'sleep', false], // <- should be array of strings only
-		devices: ['laptop', 'phone', 'tablet'],
-		phone: 'android'
+
+var movieSchema = {
+	title: { _rules: { type: 'string' } },
+	crew: {
+		director: { _rules: { type: 'string' } },
+		writers: { _rules: { type: 'array', arrayType: 'string' } }
 	}
 };
-var error = stefie(val,  schema);
+
+var error = stefie(movie, movieSchema);
 
 if (error != null) {
 	console.log(error);
-	/*
-	Outputs:
-	{
-	  age: 'Invalid type',
-	  mood: 'Regex failed',
-	  profile: {
-        hobbies: 'Invalid element type'
-	  }
-    }
-	*/
 }
 ```
 
-## Schema Attributes
+### The \_rules Object
 
-Schema Attributes begin with an underscore so that they don't namespace clash with the property names of your object in the schema.
+Add all the rules that apply to a property in the `_rules` object in the schema.
 
-| Attribute      | Value                                                                                                        | Note
-| -------------- | ------------------------------------------------------------------------------------------------------------ | ----
-| `_required`    | <code>true&#124;false</code>                                                                                 | For any type
-| `_type`        | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object&#124;hexString&#124;ObjectID'</code> | .
-| `_min`         | *number*                                                                                                     | For number type
-| `_max`         | *number*                                                                                                     | For number type
-| `_elementType` | <code>'date&#124;string&#124;boolean&#124;number&#124;array&#124;object'</code>                              | For array type
-| `_minLength`   | *number*                                                                                                     | For array or string type
-| `_maxLength`   | *number*                                                                                                     | For array or string type
-| `_enum`        | *array*                                                                                                      | For any type
-| `_regex`       | *regular expression*                                                                                         | .
+```
+var schema = {
+	title: { _rules: { type: 'string' } },
+	rating: { _rules: { type: 'number', required: true, null: false, min: 1, max: 10 } }
+};
+```
+
+### The Return Object
+
+If there are no errors, `stefie()` returns **null**.
+
+If there are errors, she returns an object with each property that failed validation and the reason why.
+
+```
+var movie2 = {
+	title: 300,
+	crew: {
+		director: 'Zack Snyder',
+		writers: 'Frank Miller, Zack Snyder'
+	}
+};
+
+var error = stefie(movie2, movieSchema);
+
+if (error != null) {
+	console.log(error);
+}
+```
+
+Output:
+
+```
+{
+	title: 'Invalid type',
+	crew: {
+		writers: 'Invalid type'
+	}
+}
+```
+
+## Rules
+
+The following are keys you can use in the `_rules` object in your schema.
+
+**Rule precedence**: If you have `required` and/or `null` rules, required will be evaluated first, then null, then any other rule.
+
+**Rule skip**: Rules will not be evaluated if the property value is undefined. The exception is the `required` rule.
+
+### required
+
+Data type: *boolean*
+
+If `true`, property must be defined. If `false`, property can be undefined.
+
+```
+var schema = {
+	title: { _rules: { required: true } }
+};
+```
+
+Note: Setting this rule to `false` is logically the same as not using it at all.
+
+### null
+
+Data type: *boolean*
+
+If `true`, property can be `null`. If `false`, property cannot be `null`.
+
+```
+var schema = {
+	rating: { _rules: { null: true } }
+};
+```
+
+Note: `required` and `null` rules can coexist together.
+
+### type
+
+Data type: *string*
+
+Checks if property is of the specified type.
+
+Possible types | Notes
+--- | ---
+array | &nbsp;
+boolean | &nbsp;
+date | Checks if property is a JavaScript Date object
+dateString | Checks if property can be parsed with `Date.parse()`
+number | &nbsp;
+object | &nbsp;
+objectId | Checks if property is a MongoDB ObjectID object
+objectIdString | Checks if property is a valid MongoDB ObjectID string
+string | &nbsp;
+
+```
+var schema = {
+	rating: { _rules: { type: 'number' } }
+};
+```
+
+### arrayType
+
+Data type: *string*
+
+Checks if an array's elements are of the specified type.
+
+Possible types | Notes
+--- | ---
+array | &nbsp;
+boolean | &nbsp;
+date | Checks if property is a JavaScript Date object
+dateString | Checks if property can be parsed with `Date.parse()`
+number | &nbsp;
+object | &nbsp;
+objectId | Checks if property is a MongoDB ObjectID object
+objectIdString | Checks if property is a valid MongoDB ObjectID string
+string | &nbsp;
+
+```
+var schema = {
+	writers: { _rules: { type: 'array', arrayType: 'string' } }
+};
+```
+
+### min
+
+Data type: *number*
+
+Checks if property is equal to or greater than the specified number.
+
+```
+var schema = {
+	rating: { _rules: { type: 'number', min: 1 } }
+};
+```
+
+### max
+
+Data type: *number*
+
+Checks if property is equal to or less than the specified number.
+
+```
+var schema = {
+	rating: { _rules: { type: 'number', max: 10 } }
+};
+```
+
+### minLength
+
+Data type: *number*
+
+Checks if array/string has a length equal to or greater than the specified number.
+
+```
+var schema = {
+	name: { _rules: { type: 'string', minLength: 1 } },
+	writers: { _rules: { type: 'array', arrayType: 'string', minLength: 1 } }
+};
+```
+
+### maxLength
+
+Data type: *number*
+
+Checks if array/string has a length equal to or less than the specified number.
+
+```
+var schema = {
+	name: { _rules: { type: 'string', maxLength: 100 } },
+	writers: { _rules: { type: 'array', arrayType: 'string', maxLength: 10 } }
+};
+```
+
+### enum
+
+Data type: *array*
+
+If property is a **single-value**, checks if it is one of the enumerated values. If property is an **array**, checks if each of its elements is one of the enumerated values.
+
+```
+var schema = {
+	director: { _rules: { type: 'string', enum: ['Zack Snyder', 'JJ Abrams'] } },
+	cast: { _rules: { type: 'array', enum: ['Gerald Butler', 'Lena Headey', 'Michael Fassbender'] } }
+};
+```
+
+### regex
+
+Data type: *regular expression*
+
+Checks if property matches the specified regular expression.
+
+```
+var schema = {
+	email: { _rules: { regex: /.+@.+/ } }
+};
+```
+
+## Custom Validators
+
+You can add your own custom validator functions to stefie, and use it in the `_rules` object in your schema.
+
+### stefie.add(rule, fn)
+
+Arguments:
+
+1. `rule` *(string)*: Name of the rule
+2. `fn` *(function)*: Validator function
+
+The validator function must have a signature of `function(val, ruleVal)` where `val` is the value of the property of the object we are validating and `ruleVal` is the value of the rule.
+
+```
+var fn = function(val, ruleVal) {
+	return (val !== ruleVal ? null : 'Value is disallowed');
+};
+
+stefie.add('disallow', fn);
+
+var person = {
+	name: 'Stranger'
+};
+
+var error = stefie(person,  {
+	name: { _rules: { type: 'string', disallow: 'Stranger' } }
+});
+
+console.log(error);
+```
+
+Output:
+
+```
+{
+	name: 'Value is disallowed'
+}
+```
+
+### stefie.remove(rule)
+
+Removes a validator. Cannot remove *required* and *null*.
+
+Arguments:
+
+1. `rule` *(string)*: Name of the rule
+
+```
+stefie.remove('disallow');
+```
 
 ## Test
+
+To run the test cases, `cd` into the stefie directory then do:
 
 ```
 npm test
 ```
 
+#### Author: [Harry Lee](mailto:harry@forlooper.com)

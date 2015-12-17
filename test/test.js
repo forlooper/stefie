@@ -1,653 +1,1329 @@
 var should = require('should'),
-	assert = require('assert'),
 	ObjectID = require('mongodb').ObjectID,
 	stefie = require('../index.js');
 
-describe('Definition object check', function(done) {
-	it('should ignore non-objects in schema', function (done) {
-		var schema = {
-			color: { _type: 'string' },
-			size: function() { return 1+2; }
+describe('Schema test', function() {
+	it('should throw an error if rule does not exist', function (done) {
+		try {
+			var person = {
+				name: 'Stranger'
+			};
+			
+			var error = stefie(person,  {
+				name: { _rules: { disallow: 'Stranger' } }
+			});
+		}
+		catch(err) {
+			err.message.should.equal('validator for rule "disallow" does not exist');
+		}
+		finally {
+			done();
+		}
+	});
+	
+	it('should throw an error for non-objects in schema', function (done) {
+		var movie = {
+			title: '300',
+			duration: 117,
+			rating: 5
 		};
-		var val = { name: 'green' };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
+		
+		try {
+			var error = stefie(movie,  {
+				title: { _rules: { type: 'string' } },
+				duration: 0,
+				rating: function() { return 0; }
+			});
+		}
+		catch(err) {
+			err.message.should.equal('non-object for property in schema');
+		}
+		finally {
+			done();
+		}
+	});
+	
+	it('should be able to traverse nested schemas', function (done) {
+		var movie = {
+			title: '300',
+			crew: {
+				director: 'Zack Snyder',
+				writers: ['Frank Miller', 'Zack Snyder']
+			}
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			crew: {
+				director: { _rules: { type: 'string' } },
+				writers: { _rules: { type: 'array', arrayType: 'string' } }
+			}
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should be able to an error in a nested schema', function (done) {
+		var movie = {
+			title: 300,
+			crew: {
+				director: 'Zack Snyder',
+				writers: 'Frank Miller, Zack Snyder'
+			}
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			crew: {
+				director: { _rules: { type: 'string' } },
+				writers: { _rules: { type: 'array', arrayType: 'string' } }
+			}
+		});
+		
+		error.title.should.equal('Invalid type');
+		error.crew.writers.should.equal('Invalid type');
 		done();
 	});
 });
 
-describe('Optional check', function(done) {
-	it('should detect value exists', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = { name: 'Stefie' };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
+describe('Type validation', function() {
+	it('should detect unsupported type', function (done) {
+		var movie = {
+			title: '300'
+		};
+		
+		try {
+			var error = stefie(movie,  {
+				title: { _rules: { type: 'unsupported' } }
+			});
+		}
+		catch(err) {
+			err.message.should.equal('unsupported type');
+		}
+		finally {
+			done();
+		}
+	});
+	
+	it('should detect array', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { type: 'array', arrayType: 'string' } }
+		});
+		
+		should.not.exist(error);
 		done();
 	});
-	it('should detect missing value but ok', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = {};
-		var error = stefie(val,  schema);
-
-		assert(error == null);
+	
+	it('should detect non-array', function (done) {
+		var movie = {
+			title: '300',
+			cast: 'Gerard Butler, Lena Headey, Michael Fassbender'
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { type: 'array', arrayType: 'string' } }
+		});
+		
+		error.cast.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect boolean', function (done) {
+		var movie = {
+			title: '300',
+			released: true
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			released: { _rules: { type: 'boolean' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-boolean', function (done) {
+		var movie = {
+			title: '300',
+			released: 'true'
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			released: { _rules: { type: 'boolean' } }
+		});
+		
+		error.released.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect date', function (done) {
+		var movie = {
+			title: '300',
+			releaseDate: new Date(2007, 2, 9)
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			releaseDate: { _rules: { type: 'date' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-date', function (done) {
+		var movie = {
+			title: '300',
+			releaseDate: '9 Mar 2007'
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			releaseDate: { _rules: { type: 'date' } }
+		});
+		
+		error.releaseDate.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect Object ID string', function (done) {
+		var actor = {
+			id: ObjectID().toString(),
+			name: 'Gerald Butler'
+		};
+		
+		var error = stefie(actor,  {
+			id: { _rules: { type: 'objectIdString' } },
+			name: { _rules: { type: 'string' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-Object ID string', function (done) {
+		var actor = {
+			id: '123',
+			name: 'Gerald Butler'
+		};
+		
+		var error = stefie(actor,  {
+			id: { _rules: { type: 'objectIdString' } },
+			actor: { _rules: { type: 'string' } }
+		});
+		
+		error.id.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect ISO date string', function (done) {
+		var day = {
+			date: (new Date()).toISOString()
+		};
+		
+		var error = stefie(day,  {
+			date: { _rules: { type: 'dateString' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-ISO date string', function (done) {
+		var day = {
+			date: 'abc'
+		};
+		
+		var error = stefie(day,  {
+			date: { _rules: { type: 'dateString' } }
+		});
+		
+		error.date.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect number (integer)', function (done) {
+		var day = {
+			temp: 25
+		};
+		
+		var error = stefie(day,  {
+			temp: { _rules: { type: 'number' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect number (decimal)', function (done) {
+		var day = {
+			temp: 25.0
+		};
+		
+		var error = stefie(day,  {
+			temp: { _rules: { type: 'number' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect number (negative)', function (done) {
+		var day = {
+			temp: -5
+		};
+		
+		var error = stefie(day,  {
+			temp: { _rules: { type: 'number' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-number', function (done) {
+		var day = {
+			temp: 'five'
+		};
+		
+		var error = stefie(day,  {
+			temp: { _rules: { type: 'number' } }
+		});
+		
+		error.temp.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect object', function (done) {
+		var computer = {
+			model: 'MacBook Air',
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string' } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-object', function (done) {
+		var computer = {
+			model: 'MacBook Air',
+			processor: 'Intel Core i5'
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string' } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		error.processor.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect Object ID', function (done) {
+		var actor = {
+			id: ObjectID(),
+			name: 'Gerald Butler'
+		};
+		
+		var error = stefie(actor,  {
+			id: { _rules: { type: 'objectId' } },
+			name: { _rules: { type: 'string' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-Object ID', function (done) {
+		var actor = {
+			id: 'abc',
+			name: 'Gerald Butler'
+		};
+		
+		var error = stefie(actor,  {
+			id: { _rules: { type: 'objectId' } },
+			name: { _rules: { type: 'string' } }
+		});
+		
+		error.id.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect string', function (done) {
+		var movie = {
+			title: '300'
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-string', function (done) {
+		var movie = {
+			title: 300
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } }
+		});
+		
+		error.title.should.equal('Invalid type');
 		done();
 	});
 });
 
-
-
-describe('Required check', function(done) {
-	it('should detect value exists', function (done) {
-		var schema = { name: { _type: 'string', _required: true } };
-		var val = { name: 'Stefie' };
-		var error = stefie(val,  schema);
+describe('Array type validation', function() {
+	it('should detect empty array', function (done) {
+		var poll = {
+			votes: []
+		};
 		
-		assert(error == null);
-		done();
-	});
-	it('should detect missing value', function (done) {
-		var schema = { name: { _type: 'string', _required: true } };
-		var val = {};
-		var error = stefie(val,  schema);
+		var error = stefie(poll,  {
+			votes: { _rules: { type: 'array', arrayType: 'boolean' } }
+		});
 		
-		error.name.should.equal('Required');
+		should.not.exist(error);
 		done();
 	});
-	it('should detect undefined value', function (done) {
-		var schema = { name: { _type: 'string', _required: true } };
-		var undefinedVar;
-		var val = { name: undefinedVar };
-		var error = stefie(val,  schema);
-
-		error.name.should.equal('Required');
+	
+	it('should detect boolean elements', function (done) {
+		var poll = {
+			votes: [true, false, true]
+		};
+		
+		var error = stefie(poll,  {
+			votes: { _rules: { type: 'array', arrayType: 'boolean' } }
+		});
+		
+		should.not.exist(error);
 		done();
 	});
-	it('should detect null value', function (done) {
-		var schema = { name: { _type: 'string', _required: true } };
-		var val = { name: null };
-		var error = stefie(val,  schema);
-
-		error.name.should.equal('Required');
+	
+	it('should detect non-boolean elements', function (done) {
+		var poll = {
+			votes: ['yes', 'no', 'yes']
+		};
+		
+		var error = stefie(poll,  {
+			votes: { _rules: { type: 'array', arrayType: 'boolean' } }
+		});
+		
+		error.votes.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect date elements', function (done) {
+		var poll = {
+			dates: [(new Date()), (new Date()), (new Date())]
+		};
+		
+		var error = stefie(poll,  {
+			dates: { _rules: { type: 'array', arrayType: 'date' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-date elements', function (done) {
+		var poll = {
+			dates: ['6 Mar 2007']
+		};
+		
+		var error = stefie(poll,  {
+			dates: { _rules: { type: 'array', arrayType: 'date' } }
+		});
+		
+		error.dates.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect Object ID string elements', function (done) {
+		var table = {
+			entries: [ObjectID().toString(), ObjectID().toString(), ObjectID().toString()]
+		};
+		
+		var error = stefie(table,  {
+			entries: { _rules: { type: 'array', arrayType: 'objectIdString' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-Object ID string elements', function (done) {
+		var table = {
+			entries: ['123', '456', '789']
+		};
+		
+		var error = stefie(table,  {
+			entries: { _rules: { type: 'array', arrayType: 'objectIdString' } }
+		});
+		
+		error.entries.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect ISO date string elements', function (done) {
+		var poll = {
+			dates: [(new Date()).toISOString(), (new Date()).toISOString(), (new Date()).toISOString()]
+		};
+		
+		var error = stefie(poll,  {
+			dates: { _rules: { type: 'array', arrayType: 'dateString' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-ISO date string elements', function (done) {
+		var poll = {
+			dates: ['abc', 'abc', 'abc']
+		};
+		
+		var error = stefie(poll,  {
+			dates: { _rules: { type: 'array', arrayType: 'dateString' } }
+		});
+		
+		error.dates.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect number (integer) elements', function (done) {
+		var poll = {
+			voterAges: [20, 30, 40]
+		};
+		
+		var error = stefie(poll,  {
+			voterAges: { _rules: { type: 'array', arrayType: 'number' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect number (decimal) elements', function (done) {
+		var spring = {
+			temperatures: [15.0, 20.0, 25.0]
+		};
+		
+		var error = stefie(spring,  {
+			temperatures: { _rules: { type: 'array', arrayType: 'number' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect number (negative) elements', function (done) {
+		var winter = {
+			temperatures: [-1.0, -5, -10.0]
+		};
+		
+		var error = stefie(winter,  {
+			temperatures: { _rules: { type: 'array', arrayType: 'number' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-number elements', function (done) {
+		var summer = {
+			temperatures: ['one', true]
+		};
+		
+		var error = stefie(summer,  {
+			temperatures: { _rules: { type: 'array', arrayType: 'number' } }
+		});
+		
+		error.temperatures.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect object elements', function (done) {
+		var movie = {
+			cast: [{ name: 'Gerald Butler' },  { name: 'Lena Headey' }]
+		};
+		
+		var error = stefie(movie,  {
+			cast: { _rules: { type: 'array', arrayType: 'object' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-object elements', function (done) {
+		var movie = {
+			cast: ['Gerald Butler', 'Lena Headey']
+		};
+		
+		var error = stefie(movie,  {
+			cast: { _rules: { type: 'array', arrayType: 'object' } }
+		});
+		
+		error.cast.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect Object ID elements', function (done) {
+		var database = {
+			entries: [ObjectID(), ObjectID()]
+		};
+		
+		var error = stefie(database,  {
+			entries: { _rules: { type: 'array', arrayType: 'objectId' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-Object ID elements', function (done) {
+		var database = {
+			entries: ['123', '456']
+		};
+		
+		var error = stefie(database,  {
+			entries: { _rules: { type: 'array', arrayType: 'objectId' } }
+		});
+		
+		error.entries.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect string elements', function (done) {
+		var poll = {
+			votes: ['yes', 'no', 'yes']
+		};
+		
+		var error = stefie(poll,  {
+			votes: { _rules: { type: 'array', arrayType: 'string' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-string elements', function (done) {
+		var poll = {
+			votes: [true, false, true]
+		};
+		
+		var error = stefie(poll,  {
+			votes: { _rules: { type: 'array', arrayType: 'string' } }
+		});
+		
+		error.votes.should.equal('Invalid element type');
 		done();
 	});
 });
 
-
-
-describe('String check', function(done) {
-	it('should detect value is a string', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = { name: 'Stefie' };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is an invalid type', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = { name: 100 };
-		var error = stefie(val,  schema);
+describe('Required validation', function() {
+	it('should not validate undefined property if required is absent', function (done) {
+		var computer = {
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
 		
-		error.name.should.equal('Invalid type');
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string' } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		should.not.exist(error);
 		done();
 	});
-	it('should detect length < min', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = { name: '' };
-		var error = stefie(val,  schema);
+	
+	it('should not validate undefined property if required is false', function (done) {
+		var computer = {
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', required: false } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should not validate defined property if required is false', function (done) {
+		var computer = {
+			model: 'MacBook Air',
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', required: false } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should validate undefined property if required is true', function (done) {
+		var computer = {
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', required: true } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		error.model.should.equal('Required');
+		done();
+	});
+	
+	it('should validate defined property if required is true', function (done) {
+		var computer = {
+			model: 'MacBook Air',
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', required: true } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+});
+
+describe('Null validation', function() {
+	it('should detect value can be null and is null', function (done) {
+		var computer = {
+			model: null,
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', null: true } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect value cannot be null and is null', function (done) {
+		var computer = {
+			model: null,
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', null: false } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		error.model.should.equal('Null');
+		done();
+	});
+	
+	it('should detect value can be null but can be undefined', function (done) {
+		var computer = {
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', null: true, required: false } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect value can be null but cannot be undefined', function (done) {
+		var computer = {
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', null: true, required: true } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		error.model.should.equal('Required');
+		done();
+	});
+	
+	it('should detect value can be null and is of correct type', function (done) {
+		var computer = {
+			model: 'MacBook Air',
+			processor: {
+				name: 'Intel Core i5',
+				speed: '1.8 GHz'
+			}
+		};
+		
+		var error = stefie(computer,  {
+			model: { _rules: { type: 'string', null: true } },
+			processor: { _rules: { type: 'object' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+});
+
+describe('Min validation', function() {
+	it('should detect value equals minimum', function (done) {
+		var movie = {
+			title: '300',
+			starRating: 1 
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			starRating: { _rules: { type: 'number', min: 1 } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect value above minimum', function (done) {
+		var movie = {
+			title: '300',
+			starRating: 2
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			starRating: { _rules: { type: 'number', min: 1 } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect value below minimum', function (done) {
+		var movie = {
+			title: '300',
+			starRating: 0
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			starRating: { _rules: { type: 'number', min: 1 } }
+		});
+		
+		error.starRating.should.equal('Below minimum');
+		done();
+	});
+});
+
+describe('Max validation', function() {
+	it('should detect value equals maximum', function (done) {
+		var movie = {
+			title: '300',
+			starRating: 5
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			starRating: { _rules: { type: 'number', max: 5 } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect value above maximum', function (done) {
+		var movie = {
+			title: '300',
+			starRating: 6
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			starRating: { _rules: { type: 'number', max: 5 } }
+		});
+		
+		error.starRating.should.equal('Above maximum');
+		done();
+	});
+	
+	it('should detect value below maximum', function (done) {
+		var movie = {
+			title: '300',
+			starRating: 4
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			starRating: { _rules: { type: 'number', max: 5 } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+});
+
+describe('Min length validation', function() {
+	it('should detect string length equals minimum length', function (done) {
+		var actor = {
+			name: 'G'
+		};
+		
+		var error = stefie(actor,  {
+			name: { _rules: { type: 'string', minLength: 1 } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect string length above minimum length', function (done) {
+		var actor = {
+			name: 'Gerald Butler'
+		};
+		
+		var error = stefie(actor,  {
+			name: { _rules: { type: 'string', minLength: 1 } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect string length below minimum length', function (done) {
+		var actor = {
+			name: ''
+		};
+		
+		var error = stefie(actor,  {
+			name: { _rules: { type: 'string', minLength: 1 } }
+		});
 		
 		error.name.should.equal('Below minimum length');
 		done();
 	});
-	it('should detect length >= min', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = { name: 'Stefie' };
-		var error = stefie(val,  schema);
+	
+	it('should detect array length equals minimum length', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler', 'Lena Headey']
+		};
 		
-		assert(error == null);
-		done();
-	});
-	it('should detect length > max', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = { name: 'Stefie' };
-		var error = stefie(val,  schema);
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { type: 'array', minLength: 2 } }
+		});
 		
-		assert(error == null);
+		should.not.exist(error);
 		done();
 	});
-	it('should detect length <= max', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = { name: 'Stefie' };
-		var error = stefie(val,  schema);
+	
+	it('should detect array length above minimum length', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender']
+		};
 		
-		assert(error == null);
-		done();
-	});
-	it('should detect length >= min and <= max', function (done) {
-		var schema = { name: { _type: 'string' } };
-		var val = { name: 'Stefie' };
-		var error = stefie(val,  schema);
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { type: 'array', minLength: 2 } }
+		});
 		
-		assert(error == null);
+		should.not.exist(error);
 		done();
 	});
-});
-
-
-
-describe('Boolean check', function(done) {
-	it('should detect value is a boolean', function (done) {
-		var schema = { female: { _type: 'boolean' } };
-		var val = { female: true };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is an invalid type', function (done) {
-		var schema = { female: { _type: 'boolean' } };
-		var val = { female: 'true' };
-		var error = stefie(val,  schema);
-
-		error.female.should.equal('Invalid type');
-		done();
-	});
-});
-
-
-
-describe('Number check', function(done) {
-	it('should detect value is a number', function (done) {
-		var schema = { age: { _type: 'number' } };
-		var val = { age: 25 };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is a number >= min', function (done) {
-		var schema = { age: { _type: 'number', _min: 21 } };
-		var val = { age: 25 };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is a number <= max', function (done) {
-		var schema = { age: { _type: 'number', _max: 30 } };
-		var val = { age: 30 };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is a number >= min and <= max', function (done) {
-		var schema = { age: { _type: 'number', _min: 21, _max: 30 } };
-		var val = { age: 26 };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is an invalid type', function (done) {
-		var schema = { age: { _type: 'number' } };
-		var val = { age: false };
-		var error = stefie(val,  schema);
-
-		error.age.should.equal('Invalid type');
-		done();
-	});
-	it('should detect value is below min', function (done) {
-		var schema = { age: { _type: 'number', _min: 21 } };
-		var val = { age: 20 };
-		var error = stefie(val,  schema);
-
-		error.age.should.equal('Below minimum amount');
-		done();
-	});
-	it('should detect value is below min (2)', function (done) {
-		var schema = { age: { _type: 'number', _min: 21, _max: 30 } };
-		var val = { age: 20 };
-		var error = stefie(val,  schema);
-
-		error.age.should.equal('Below minimum amount');
-		done();
-	});
-	it('should detect value is above max', function (done) {
-		var schema = { age: { _type: 'number', _max: 30 } };
-		var val = { age: 31 };
-		var error = stefie(val,  schema);
-
-		error.age.should.equal('Above maximum amount');
-		done();
-	});
-	it('should detect value is above max (2)', function (done) {
-		var schema = { age: { _type: 'number', _min: 21, _max: 30 } };
-		var val = { age: 31 };
-		var error = stefie(val,  schema);
-
-		error.age.should.equal('Above maximum amount');
-		done();
-	});
-});
-
-
-
-describe('Array check', function(done) {
-	it('should detect value is an array', function (done) {
-		var schema = { friends: { _type: 'array' } };
-		var val = { friends: ['may', 'katrina'] };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is an array although empty', function (done) {
-		var schema = { friends: { _type: 'array' } };
-		var val = { friends: [] };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect length >= min', function (done) {
-		var schema = { friends: { _type: 'array', _minLength: 2 } };
-		var val = { friends: ['may', 'katrina'] };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect length <= max', function (done) {
-		var schema = { friends: { _type: 'array', _maxLength: 2 } };
-		var val = { friends: ['may', 'katrina'] };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect length >= min and <= max', function (done) {
-		var schema = { friends: { _type: 'array', _minLength: 1, _maxLength: 3 } };
-		var val = { friends: ['may', 'katrina'] };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is an invalid type', function (done) {
-		var schema = { friends: { _type: 'array' } };
-		var val = { friends: 100 };
-		var error = stefie(val,  schema);
-
-		error.friends.should.equal('Invalid type');
-		done();
-	});
-	it('should detect value is an invalid element type', function (done) {
-		var schema = { friends: { _type: 'array', _elementType: 'string' } };
-		var val = { friends: ['may', 200] };
-		var error = stefie(val,  schema);
-
-		error.friends.should.equal('Invalid element type');
-		done();
-	});
-	it('should detect value is below min', function (done) {
-		var schema = { friends: { _type: 'array', _minLength: 3 } };
-		var val = { friends: ['may', 'katrina'] };
-		var error = stefie(val,  schema);
-
-		error.friends.should.equal('Below minimum length');
-		done();
-	});
-	it('should detect value is below min (2)', function (done) {
-		var schema = { friends: { _type: 'array', _minLength: 3, _maxLength: 3 } };
-		var val = { friends: ['may', 'katrina'] };
-		var error = stefie(val,  schema);
-
-		error.friends.should.equal('Below minimum length');
-		done();
-	});
-	it('should detect value is above max', function (done) {
-		var schema = { friends: { _type: 'array', _maxLength: 1 } };
-		var val = { friends: ['may', 'katrina'] };
-		var error = stefie(val,  schema);
-
-		error.friends.should.equal('Above maximum length');
-		done();
-	});
-	it('should detect value is above max (2)', function (done) {
-		var schema = { friends: { _type: 'array', _minLength: 1, _maxLength: 1 } };
-		var val = { friends: ['may', 'katrina'] };
-		var error = stefie(val,  schema);
-
-		error.friends.should.equal('Above maximum length');
-		done();
-	});
-});
-
-
-
-describe('Object check', function(done) {
-	it('should detect value is an object', function (done) {
-		var schema = { attributes: { _type: 'object' } };
-		var val = { attributes: {} };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect value is not an object', function (done) {
-		var schema = { attributes: { _type: 'object' } };
-		var val = { attributes: 100 };
-		var error = stefie(val,  schema);
-
-		error.attributes.should.equal('Invalid type');
-		done();
-	});
-});
-
-
-
-describe('Nested object check', function(done) {
-	it('should detect nested values are valid', function (done) {
-		var schema = {
-			attributes: {
-				_type: 'object',
-				beautiful: { _type: 'boolean', _required: true },
-				siblings: { _type: 'number', _required: false },
-				religion: { _type: 'string', _required: true },
-				hobbies: { _type: 'array', _elementType: 'string' }
-			}
+	
+	it('should detect array length below minimum length', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler']
 		};
-		var val = {
-			attributes: {
-				beautiful: true,
-				siblings: 1,
-				religion: 'buddhism',
-				hobbies: ['eat', 'sleep', 'yoga']
-			}
-		};
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should allow optional nested values to be missing', function (done) {
-		var schema = {
-			attributes: {
-				_type: 'object',
-				beautiful: { _type: 'boolean', _required: true },
-				siblings: { _type: 'number', _required: false },
-				religion: { _type: 'string', _required: true },
-				hobbies: { _type: 'array', _elementType: 'string' }
-			}
-		};
-		var val = {
-			attributes: {
-				beautiful: true,
-				religion: 'buddhism'
-			}
-		};
-		var error = stefie(val,  schema);
-
-		assert(error == null);
-		done();
-	});
-	it('should detect invalid nested values', function (done) {
-		var schema = {
-			attributes: {
-				_type: 'object',
-				beautiful: { _type: 'boolean', _required: true },
-				siblings: { _type: 'number', _required: false },
-				religion: { _type: 'string', _required: true },
-				hobbies: { _type: 'array', _elementType: 'string' }
-			}
-		};
-		var val = {
-			attributes: {
-				beautiful: 100,
-				siblings: 1,
-				religion: 'buddhism',
-				hobbies: ['eat', 'sleep', false]
-			}
-		};
-		var error = stefie(val,  schema);
-
-		error.attributes.beautiful.should.equal('Invalid type');
-		error.attributes.hobbies.should.equal('Invalid element type');
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { type: 'array', minLength: 2 } }
+		});
+		
+		error.cast.should.equal('Below minimum length');
 		done();
 	});
 });
 
-
-
-describe('Date check', function(done) {
-	it('should detect value is a date', function (done) {
-		var schema = {launchDate: {_type: 'date'}};
-		var val = {launchDate: new Date(2015, 1, 1)};
-		var error = stefie(val, schema);
-
-		assert(error == null);
+describe('Max length validation', function() {
+	it('should detect string length equals maximum length', function (done) {
+		var actor = {
+			name: 'Gerald'
+		};
+		
+		var error = stefie(actor,  {
+			name: { _rules: { type: 'string', maxLength: 6 } }
+		});
+		
+		should.not.exist(error);
 		done();
 	});
-
-	it('should detect value is not a date', function (done) {
-		var schema = {launchDate: {_type: 'date'}};
-		var val = {launchDate: false};
-		var error = stefie(val, schema);
-
-		error.launchDate.should.equal('Invalid type');
+	
+	it('should detect string length above maximum length', function (done) {
+		var actor = {
+			name: 'Gerald Butler'
+		};
+		
+		var error = stefie(actor,  {
+			name: { _rules: { type: 'string', maxLength: 6 } }
+		});
+		
+		error.name.should.equal('Above maximum length');
+		done();
+	});
+	
+	it('should detect string length below maximum length', function (done) {
+		var actor = {
+			name: 'Geral'
+		};
+		
+		var error = stefie(actor,  {
+			name: { _rules: { type: 'string', maxLength: 6 } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect array length equals maximum length', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler', 'Lena Headey']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { type: 'array', maxLength: 2 } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect array length above maximum length', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { type: 'array', maxLength: 2 } }
+		});
+		
+		error.cast.should.equal('Above maximum length');
+		done();
+	});
+	
+	it('should detect array length below maximum length', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { type: 'array', maxLength: 2 } }
+		});
+		
+		should.not.exist(error);
 		done();
 	});
 });
 
-describe('ObjectID check', function(done) {
-	it('should detect value is an ObjectID', function (done) {
-		var schema = { _id: {_type: 'ObjectID' } };
-		var val = { _id: new ObjectID('20dce54a286839aeb06143c2') };
-		var error = stefie(val, schema);
-
-		assert(error == null);
-		done();
-	});
-
-	it('should detect value is not an ObjectID', function (done) {
-		var schema = { _id: {_type: 'ObjectID' } };
-		var val = { _id: '20dce54a286839aeb06143c2' };
-		var error = stefie(val, schema);
-
-		error._id.should.equal('Invalid type');
-		done();
-	});
-});
-
-describe('Hex String check', function(done) {
-	it('should detect value is an hex string', function (done) {
-		var schema = { _id: { _type: 'hexString' } };
-		var val = { _id: '20dce54a286839aeb06143c2' };
-		var error = stefie(val, schema);
-
-		assert(error == null);
-		done();
-	});
-
-	it('should detect value is not an ObjectID', function (done) {
-		var schema = { _id: { _type: 'hexString' } };
-		var val = { _id: '20dce54a286839aeb0!!!!!!' };
-		var error = stefie(val, schema);
-
-		error._id.should.equal('Invalid type');
-		done();
-	});
-});
-
-describe('Enum check', function(done) {
+describe('enum validation', function() {
 	it('should detect value is in enum', function (done) {
-		var schema = { piece: { _enum: ['rook', 'queen', 'bishop'] } };
-		var val = { piece: 'queen' };
-		var error = stefie(val, schema);
-
-		assert(error == null);
+		var movie = {
+			title: '300',
+			rating: 'R'
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			rating: { _rules: { enum: ['G', 'PG', 'PG-13', 'R', 'NC-17'] } }
+		});
+		
+		should.not.exist(error);
 		done();
 	});
-
+	
 	it('should detect value is not in enum', function (done) {
-		var schema = { piece: { _enum: ['rook', 'queen', 'bishop'] } };
-		var val = { piece: 'king' };
-		var error = stefie(val, schema);
-
-		error.piece.should.equal('Invalid value');
+		var movie = {
+			title: '300',
+			rating: 'No Rating'
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			rating: { _rules: { enum: ['G', 'PG', 'PG-13', 'R', 'NC-17'] } }
+		});
+		
+		error.rating.should.equal('Not in enumeration');
 		done();
 	});
-
-	it('should detect values are in enum', function (done) {
-		var schema = { pieces: { _enum: ['rook', 'queen', 'bishop'] } };
-		var val = { pieces: ['rook', 'queen'] };
-		var error = stefie(val, schema);
-
-		assert(error == null);
+	
+	it('should detect array is equal to enum (same order)', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender', 'David Wenham']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { enum: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender', 'David Wenham'] } }
+		});
+		
+		should.not.exist(error);
 		done();
 	});
-
-	it('should detect a value is not in enum', function (done) {
-		var schema = { pieces: { _enum: ['rook', 'queen', 'bishop'] } };
-		var val = { pieces: ['king', 'queen'] };
-		var error = stefie(val, schema);
-
-		error.pieces.should.equal('Invalid value');
+	
+	it('should detect array is equal to enum (different order)', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Lena Headey', 'David Wenham', 'Michael Fassbender', 'Gerard Butler']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { enum: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender', 'David Wenham'] } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect array is subset of enum', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { enum: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender', 'David Wenham'] } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect array is superset of enum', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Nicholas Cage', 'Gerard Butler', 'Lena Headey', 'Michael Fassbender', 'David Wenham']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { enum: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender', 'David Wenham'] } }
+		});
+		
+		error.cast.should.equal('Not in enumeration');
+		done();
+	});
+	
+	it('should detect array has nothing from enum', function (done) {
+		var movie = {
+			title: '300',
+			cast: ['Nicholas Cage', 'Christian Bale']
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			cast: { _rules: { enum: ['Gerard Butler', 'Lena Headey', 'Michael Fassbender', 'David Wenham'] } }
+		});
+		
+		error.cast.should.equal('Not in enumeration');
 		done();
 	});
 });
 
-
-describe('Regex check', function(done) {
-	it('should test regex pass', function (done) {
-		var schema = { mood: { _regex: /^[a-z]+$/ } };
-		var val = { mood: 'happy' };
-		var error = stefie(val,  schema);
-
-		assert(error == null);
+describe('Regex validation', function() {
+	it('should detect matching regex', function (done) {
+		var actor = {
+			name: 'Gerald Butler',
+			email: 'gerald@hollywood.com'
+		};
+		
+		var error = stefie(actor,  {
+			name: { _rules: { type: 'string' } },
+			email: { _rules: { regex: /.+@.+/ } }
+		});
+		
+		should.not.exist(error);
 		done();
 	});
-	it('should test regex fail', function (done) {
-		var schema = { mood: { _regex: /^[a-z]+$/ } };
-		var val = { mood: -1 };
-		var error = stefie(val,  schema);
-
-		error.mood.should.equal('Regex failed');
+	
+	it('should detect non-matching regex', function (done) {
+		var actor = {
+			name: 'Gerald Butler',
+			email: '@hollywood.com'
+		};
+		
+		var error = stefie(actor,  {
+			name: { _rules: { type: 'string' } },
+			email: { _rules: { regex: /.+@.+/ } }
+		});
+		
+		error.email.should.equal('Regex mismatch');
 		done();
 	});
 });
 
-
-describe('Full schema check', function(done) {
-	it('should detect value is an object', function (done) {
-		var schema = {
-			_id: { _type: 'ObjectID', _required: true },
-			name: { _type: 'string', _required: true },
-			female: { _type: 'boolean', _required: true },
-			age: { _type: 'number' },
-			friends: { _type: 'array', _elementType: 'string', _required: true },
-			mood: { _regex: /^[a-z]+$/ },
-			attributes: {
-				_type: 'object',
-				beautiful: { _type: 'boolean', _required: true },
-				siblings: { _type: 'number', _required: false },
-				religion: { _type: 'string', _required: true },
-				hobbies: { _type: 'array', _elementType: 'string' }
-			}
+describe('Extensibility', function() {
+	it('should add custom validator', function (done) {
+		var fn = function(val, ruleVal) {
+			return (val !== ruleVal ? null : 'Value is disallowed');
 		};
-		var val = {
-			_id: new ObjectID('20dce54a286839aeb06143c2'),
-			name: 'Stefie',
-			female: true,
-			age: 25,
-			friends: ['may', 'katrina'],
-			mood: 'happy',
-			attributes: {
-				beautiful: true,
-				siblings: 1,
-				religion: 'buddhism',
-				hobbies: ['eat', 'sleep', 'yoga']
-			}
-		};
-		var error = stefie(val,  schema);
-
-		assert(error == null);
+		
+		stefie.add('disallow', fn);
 		done();
 	});
-	it('should detect and allow optional value missing', function (done) {
-		var schema = {
-			_id: { _type: 'ObjectID', _required: true },
-			name: { _type: 'string', _required: true },
-			female: { _type: 'boolean', _required: true },
-			age: { _type: 'number' },
-			friends: { _type: 'array', _elementType: 'string', _required: true },
-			mood: { _regex: /^[a-z]+$/ },
-			attributes: {
-				_type: 'object',
-				beautiful: { _type: 'boolean', _required: true },
-				siblings: { _type: 'number', _required: false },
-				religion: { _type: 'string', _required: true },
-				hobbies: { _type: 'array', _elementType: 'string' }
-			}
+	
+	it('should detect disallowed value', function (done) {
+		var person = {
+			name: 'Stranger'
 		};
-		var val = {
-			_id: new ObjectID('20dce54a286839aeb06143c2'),
-			name: 'Stefie',
-			female: true,
-			friends: ['may', 'katrina'],
-			attributes: {
-				beautiful: true,
-				religion: 'buddhism'
-			}
-		};
-		var error = stefie(val,  schema);
-
-		assert(error == null);
+		
+		var error = stefie(person,  {
+			name: { _rules: { type: 'string', disallow: 'Stranger' } }
+		});
+		
+		error.name.should.equal('Value is disallowed');
 		done();
 	});
-	it('should detect all as invalid types', function (done) {
-		var schema = {
-			_id: { _type: 'ObjectID', _required: true },
-			name: { _type: 'string', _required: true },
-			female: { _type: 'boolean', _required: true },
-			age: { _type: 'number' },
-			friends: { _type: 'array', _elementType: 'string', _required: true },
-			mood: { _regex: /^[a-z]+$/ },
-			attributes: {
-				_type: 'object',
-				beautiful: { _type: 'boolean', _required: true },
-				siblings: { _type: 'number', _required: false },
-				religion: { _type: 'string', _required: true },
-				hobbies: { _type: 'array', _elementType: 'string' }
-			}
+	
+	it('should detect non-disallowed value', function (done) {
+		var person = {
+			name: 'Gerald Butler'
 		};
-		var val = {
-			_id: '100',
-			name: 100,
-			female: 200,
-			age: '300',
-			friends: 400,
-			mood: -1,
-			attributes: {
-				beautiful: 100,
-				siblings: 1,
-				religion: 'buddhism',
-				hobbies: ['eat', 'sleep', false]
-			}
-		};
-		var error = stefie(val,  schema);
-
-		error._id.should.equal('Invalid type');
-		error.name.should.equal('Invalid type');
-		error.female.should.equal('Invalid type');
-		error.age.should.equal('Invalid type');
-		error.friends.should.equal('Invalid type');
-		error.mood.should.equal('Regex failed');
-		error.attributes.beautiful.should.equal('Invalid type');
-		error.attributes.hobbies.should.equal('Invalid element type');
+		
+		var error = stefie(person,  {
+			name: { _rules: { type: 'string', disallow: 'Stranger' } }
+		});
+		
+		should.not.exist(error);
 		done();
+	});
+	
+	it('should not add custom validator if rule is "required"', function (done) {
+		var fn = function(val, ruleVal) {
+			return null;
+		};
+		
+		try {
+			stefie.add('required', fn);
+		}
+		catch(err) {
+			err.message.should.equal('argument rule must not be required or null');
+		}
+		finally {
+			done();
+		}
+	});
+	
+	it('should not add custom validator if rule is "null"', function (done) {
+		var fn = function(val, ruleVal) {
+			return null;
+		};
+		
+		try {
+			stefie.add('null', fn);
+		}
+		catch(err) {
+			err.message.should.equal('argument rule must not be required or null');
+		}
+		finally {
+			done();
+		}
+	});
+	
+	it('should not add custom validator if fn is not a function', function (done) {
+		try {
+			stefie.add('custom', 'not a function');
+		}
+		catch(err) {
+			err.message.should.equal('argument fn must be a function');
+		}
+		finally {
+			done();
+		}
+	});
+	
+	it('should remove a validator', function (done) {
+		stefie.remove('disallow');
+		
+		try {
+			var person = {
+				name: 'Stranger'
+			};
+			
+			var error = stefie(person,  {
+				name: { _rules: { type: 'string', disallow: 'Stranger' } }
+			});
+		}
+		catch(err) {
+			err.message.should.equal('validator for rule "disallow" does not exist');
+		}
+		finally {
+			done();
+		}
 	});
 });
