@@ -77,7 +77,6 @@ var validateNull = function(val, ruleVal) {
 	return (ruleVal === false && val == null ? 'Null' : null);
 };
 
-// date|string|boolean|number|array|object|objectIdString|objectId|dateString
 var validateType = function(val, ruleVal) {
 	if (val == null)
 		return null;
@@ -101,6 +100,14 @@ var validateType = function(val, ruleVal) {
 		case 'dateString':
 			if (isNaN(Date.parse(val)))
 				return errorMsg;
+			break;
+		case 'jsonString':
+			try {
+				JSON.parse(val);
+			}
+			catch(e) {
+				return errorMsg;
+			}
 			break;
 		case 'number':
 			if (typeof val != 'number')

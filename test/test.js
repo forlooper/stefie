@@ -196,37 +196,7 @@ describe('Type validation', function() {
 		done();
 	});
 	
-	it('should detect Object ID string', function (done) {
-		var actor = {
-			id: ObjectID().toString(),
-			name: 'Gerald Butler'
-		};
-		
-		var error = stefie(actor,  {
-			id: { _rules: { type: 'objectIdString' } },
-			name: { _rules: { type: 'string' } }
-		});
-		
-		should.not.exist(error);
-		done();
-	});
-	
-	it('should detect non-Object ID string', function (done) {
-		var actor = {
-			id: '123',
-			name: 'Gerald Butler'
-		};
-		
-		var error = stefie(actor,  {
-			id: { _rules: { type: 'objectIdString' } },
-			actor: { _rules: { type: 'string' } }
-		});
-		
-		error.id.should.equal('Invalid type');
-		done();
-	});
-	
-	it('should detect ISO date string', function (done) {
+	it('should detect date string', function (done) {
 		var day = {
 			date: (new Date()).toISOString()
 		};
@@ -239,7 +209,7 @@ describe('Type validation', function() {
 		done();
 	});
 	
-	it('should detect non-ISO date string', function (done) {
+	it('should detect non-date string', function (done) {
 		var day = {
 			date: 'abc'
 		};
@@ -249,6 +219,36 @@ describe('Type validation', function() {
 		});
 		
 		error.date.should.equal('Invalid type');
+		done();
+	});
+	
+	it('should detect JSON string', function (done) {
+		var movie = {
+			title: '300',
+			actors: "[\"Gerard Butler\",\"Lena Headey\"]"
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			actors: { _rules: { type: 'jsonString' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-JSON string', function (done) {
+		var movie = {
+			title: '300',
+			actors: "[Gerard Butler,Lena Headey]"
+		};
+		
+		var error = stefie(movie,  {
+			title: { _rules: { type: 'string' } },
+			actors: { _rules: { type: 'jsonString' } }
+		});
+		
+		error.actors.should.equal('Invalid type');
 		done();
 	});
 	
@@ -367,6 +367,36 @@ describe('Type validation', function() {
 		done();
 	});
 	
+	it('should detect Object ID string', function (done) {
+		var actor = {
+			id: ObjectID().toString(),
+			name: 'Gerald Butler'
+		};
+		
+		var error = stefie(actor,  {
+			id: { _rules: { type: 'objectIdString' } },
+			name: { _rules: { type: 'string' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-Object ID string', function (done) {
+		var actor = {
+			id: '123',
+			name: 'Gerald Butler'
+		};
+		
+		var error = stefie(actor,  {
+			id: { _rules: { type: 'objectIdString' } },
+			actor: { _rules: { type: 'string' } }
+		});
+		
+		error.id.should.equal('Invalid type');
+		done();
+	});
+	
 	it('should detect string', function (done) {
 		var movie = {
 			title: '300'
@@ -460,33 +490,7 @@ describe('Array type validation', function() {
 		done();
 	});
 	
-	it('should detect Object ID string elements', function (done) {
-		var table = {
-			entries: [ObjectID().toString(), ObjectID().toString(), ObjectID().toString()]
-		};
-		
-		var error = stefie(table,  {
-			entries: { _rules: { type: 'array', arrayType: 'objectIdString' } }
-		});
-		
-		should.not.exist(error);
-		done();
-	});
-	
-	it('should detect non-Object ID string elements', function (done) {
-		var table = {
-			entries: ['123', '456', '789']
-		};
-		
-		var error = stefie(table,  {
-			entries: { _rules: { type: 'array', arrayType: 'objectIdString' } }
-		});
-		
-		error.entries.should.equal('Invalid element type');
-		done();
-	});
-	
-	it('should detect ISO date string elements', function (done) {
+	it('should detect date string elements', function (done) {
 		var poll = {
 			dates: [(new Date()).toISOString(), (new Date()).toISOString(), (new Date()).toISOString()]
 		};
@@ -499,7 +503,7 @@ describe('Array type validation', function() {
 		done();
 	});
 	
-	it('should detect non-ISO date string elements', function (done) {
+	it('should detect non-date string elements', function (done) {
 		var poll = {
 			dates: ['abc', 'abc', 'abc']
 		};
@@ -509,6 +513,32 @@ describe('Array type validation', function() {
 		});
 		
 		error.dates.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect JSON string elements', function (done) {
+		var movie = {
+			actors: ["{\"name\":\"Gerald Butler\"}", "{\"name\":\"Lena Headey\"}"]
+		};
+		
+		var error = stefie(movie,  {
+			actors: { _rules: { type: 'array', arrayType: 'jsonString' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-JSON string elements', function (done) {
+		var movie = {
+			actors: ["{name:Gerald Butler}", "{name:Lena Headey}"]
+		};
+		
+		var error = stefie(movie,  {
+			actors: { _rules: { type: 'array', arrayType: 'jsonString' } }
+		});
+		
+		error.actors.should.equal('Invalid element type');
 		done();
 	});
 	
@@ -610,6 +640,32 @@ describe('Array type validation', function() {
 		
 		var error = stefie(database,  {
 			entries: { _rules: { type: 'array', arrayType: 'objectId' } }
+		});
+		
+		error.entries.should.equal('Invalid element type');
+		done();
+	});
+	
+	it('should detect Object ID string elements', function (done) {
+		var table = {
+			entries: [ObjectID().toString(), ObjectID().toString(), ObjectID().toString()]
+		};
+		
+		var error = stefie(table,  {
+			entries: { _rules: { type: 'array', arrayType: 'objectIdString' } }
+		});
+		
+		should.not.exist(error);
+		done();
+	});
+	
+	it('should detect non-Object ID string elements', function (done) {
+		var table = {
+			entries: ['123', '456', '789']
+		};
+		
+		var error = stefie(table,  {
+			entries: { _rules: { type: 'array', arrayType: 'objectIdString' } }
 		});
 		
 		error.entries.should.equal('Invalid element type');
