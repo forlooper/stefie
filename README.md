@@ -4,6 +4,10 @@ Superlight, schema-based, extensible Node.js object validator. Useful for Expres
 
 ---
 
+## What's New in 2.0.2
+
+- Added `numberString` type to check for number strings
+
 ## What's New in 2.0.1
 
 - Added `jsonString` type to check for JSON strings
@@ -139,7 +143,7 @@ Data type: *string*
 
 Checks if property is of the specified type.
 
-Possible types | Notes
+Possible values | Notes
 --- | ---
 array | &nbsp;
 boolean | &nbsp;
@@ -147,6 +151,7 @@ date | Checks if property is a JavaScript Date object
 dateString | Checks if property can be parsed with `Date.parse()`
 jsonString | Checks if property can be parsed with `JSON.parse()`
 number | &nbsp;
+numberString | &nbsp;
 object | &nbsp;
 objectId | Checks if property is a MongoDB ObjectID object
 objectIdString | Checks if property is a valid MongoDB ObjectID string
@@ -164,18 +169,7 @@ Data type: *string*
 
 Checks if an array's elements are of the specified type.
 
-Possible types | Notes
---- | ---
-array | &nbsp;
-boolean | &nbsp;
-date | Checks if each element is a JavaScript Date object
-dateString | Checks if each element can be parsed with `Date.parse()`
-jsonString | Checks if each element can be parsed with `JSON.parse()`
-number | &nbsp;
-object | &nbsp;
-objectId | Checks if each element is a MongoDB ObjectID object
-objectIdString | Checks if each element is a valid MongoDB ObjectID string
-string | &nbsp;
+See **type** for possible values.
 
 ```
 var schema = {

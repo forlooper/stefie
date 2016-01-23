@@ -7,11 +7,11 @@ module.exports = function(object, schema) {
 // http://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
 var validate = function recursive(object, schema) {
 	var rules = schema._rules;
-	
+
 	if (typeof rules === 'object') {
-		if (typeof rules.required === 'boolean') { // run required validator first if specified 
+		if (typeof rules.required === 'boolean') { // run required validator first if specified
 			var err1 = validators['required'](object, rules['required']);
-			
+
 			if (err1)
 				return err1;
 		}
@@ -19,53 +19,53 @@ var validate = function recursive(object, schema) {
 			if (typeof object === 'undefined') // skip any validation for this object since its undefined and not required
 				return null;
 		}
-		
+
 		if (typeof rules.null === 'boolean') { // run null validator second if specified
 			var err2 = validators['null'](object, rules['null']);
-			
+
 			if (err2)
 				return err2;
 		}
-		
+
 		for (var rule in rules) {
 			if (rule == 'required' || rule == 'null')
 				continue;
-			
+
 			var validator = validators[rule];
-			
+
 			if (typeof validator === 'undefined')
 				throw new Error('validator for rule "' + rule + '" does not exist');
-			
+
 			var err3 = validator(object, rules[rule]);
-			
+
 			if (err3) {
 				return err3; // return the error and don't drill down any deeper
 			}
 		}
 	}
-	
+
 	var error = null;
-	
+
 	for (var prop in schema) {
 		if (prop == '_rules')
 			continue;
-		
+
 		var subobject = object[prop];
 		var subschema = schema[prop];
-		
+
 		if (typeof subschema !== 'object')
 			throw new TypeError('non-object for property in schema');
-		
+
 		var subErr = recursive(subobject, subschema);
-		
+
 		if (subErr) {
 			if (error == null)
 				error = {};
-			
+
 			error[prop] = subErr;
 		}
 	}
-	
+
 	return error;
 };
 
@@ -80,9 +80,9 @@ var validateNull = function(val, ruleVal) {
 var validateType = function(val, ruleVal) {
 	if (val == null)
 		return null;
-	
+
 	var errorMsg = 'Invalid type';
-	
+
 	switch (ruleVal) {
 		case 'array':
 			if (!Array.isArray(val))
@@ -113,6 +113,10 @@ var validateType = function(val, ruleVal) {
 			if (typeof val != 'number')
 				return errorMsg;
 			break;
+		case 'numberString':
+			if (isNaN(val))
+				return errorMsg;
+			break;
 		case 'object':
 			if (typeof val != 'object')
 				return errorMsg;
@@ -132,49 +136,49 @@ var validateType = function(val, ruleVal) {
 		default:
 			throw new Error('unsupported type');
 	}
-	
+
 	return null;
 };
 
 var validateArrayType = function(val, ruleVal) {
 	if (val == null)
 		return null;
-	
+
 	for (var i=0; i < val.length; i++) {
 		var invalidElementType = validateType(val[i], ruleVal);
-		
+
 		if (invalidElementType)
 			return 'Invalid element type';
 	}
-	
+
 	return null;
 };
 
 var validateMin = function(val, ruleVal) {
 	if (val == null)
 		return null;
-	
+
 	return (val < ruleVal ? 'Below minimum' : null);
 };
 
 var validateMax = function(val, ruleVal) {
 	if (val == null)
 		return null;
-	
+
 	return (val > ruleVal ? 'Above maximum' : null);
 };
 
 var validateMinLength = function(val, ruleVal) {
 	if (val == null)
 		return null;
-	
+
 	return (val.length < ruleVal ? 'Below minimum length' : null);
 };
 
 var validateMaxLength = function(val, ruleVal) {
 	if (val == null)
 		return null;
-	
+
 	return (val.length > ruleVal ? 'Above maximum length' : null);
 };
 
@@ -182,7 +186,7 @@ var validateMaxLength = function(val, ruleVal) {
 var validateEnum = function(val, ruleVal) {
 	if (val == null)
 		return null;
-	
+
 	if (validateType(val, 'array') == null) {
 		for (var i=0; i < val.length; i++) {
 			if (ruleVal.indexOf(val[i]) < 0)
@@ -193,14 +197,14 @@ var validateEnum = function(val, ruleVal) {
 		if (ruleVal.indexOf(val) < 0)
 			return 'Not in enumeration';
 	}
-	
+
 	return null;
 };
 
 var validateRegex = function(val, ruleVal) {
 	if (val == null)
 		return null;
-	
+
 	return (!ruleVal.test(val) ? 'Regex mismatch' : null);
 };
 
@@ -225,10 +229,10 @@ var validators = {
 module.exports.add = function(rule, fn) {
 	if (rule === 'required' || rule === 'null')
 		throw new Error('argument rule must not be required or null');
-	
+
 	if (typeof fn !== 'function')
 		throw new TypeError('argument fn must be a function');
-	
+
 	validators[rule] = fn;
 };
 
@@ -239,6 +243,6 @@ module.exports.add = function(rule, fn) {
 module.exports.remove = function(rule) {
 	if (rule === 'required' || rule === 'null')
 		throw new Error('argument rule must not be required or null');
-	
+
 	delete validators[rule];
 };
